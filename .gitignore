@@ -1,0 +1,31 @@
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*_test
+
+# Environment files
+.env
+.env.local
+.env.example.local
+
+# Logs
+*.log
+
+# IDE & OS junk
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Go workspace
+go.work
+go.work.sum
+
+# Build output
+/bin/
+/tmp/
