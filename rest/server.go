@@ -1,32 +1,31 @@
 package rest
 
 import (
-	"wallet/config"
-
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
-	"wallet/rest/handlers/user"
+	"wallet/config"
+	userHandler "wallet/rest/handlers/user"
+	walletHandler "wallet/rest/handlers/walletB"
 	middleware "wallet/rest/middlewares"
 )
 
 type Server struct {
-	cnf *config.Config
-	//productHandler *product.Handler
-	userHandler *user.Handler
+	cnf           *config.Config
+	userHandler   *userHandler.Handler
+	walletHandler *walletHandler.Handler
 }
 
 func NewServer(
 	cnf *config.Config,
-	//productHandler *product.Handler,
-	userHandler *user.Handler,
-
+	walletHdl *walletHandler.Handler,
+	userHdl *userHandler.Handler,
 ) *Server {
 	return &Server{
-		cnf: cnf,
-		//productHandler: productHandler,
-		userHandler: userHandler,
+		cnf:           cnf,
+		walletHandler: walletHdl,
+		userHandler:   userHdl,
 	}
 }
 
@@ -37,10 +36,11 @@ func (server *Server) Start() {
 		middleware.Cors,
 		middleware.Logger,
 	)
+
 	mux := http.NewServeMux()
 	wrappedMux := manager.WrapMux(mux)
 
-	//server.productHandler.RegisterRoutes(mux, manager)
+	server.walletHandler.RegisterRoutes(mux, manager)
 	server.userHandler.RegisterRoutes(mux, manager)
 
 	addr := ":" + strconv.Itoa(server.cnf.HttpPort)

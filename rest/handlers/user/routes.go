@@ -1,8 +1,8 @@
 package user
 
 import (
-	middleware "wallet/rest/middlewares"
 	"net/http"
+	middleware "wallet/rest/middlewares"
 )
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux, manager *middleware.Manager) {

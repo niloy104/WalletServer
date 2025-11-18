@@ -1,40 +1,31 @@
 package middleware
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
 
 func (m *Middlewares) AuthenticateJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// parse jwt
-		// parse header and payload or calims
-		// hmac-sha256 alogirthm-> hash hamac(header,payload, secret key)
-		// parse signature part from jwt
-		// if the signature and hash is same => forward to create products
-		// otherwise 401 status code with Unauthorized
-
 		header := r.Header.Get("Authorization")
-
 		if header == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		headerArr := strings.Split(header, " ")
-
-		if len(headerArr) != 2 {
+		parts := strings.Split(header, " ")
+		if len(parts) != 2 {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		accessToken := headerArr[1]
-
-		tokenParts := strings.Split(accessToken, ".")
-
+		token := parts[1]
+		tokenParts := strings.Split(token, ".")
 		if len(tokenParts) != 3 {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
@@ -46,21 +37,34 @@ func (m *Middlewares) AuthenticateJWT(next http.Handler) http.Handler {
 
 		message := jwtHeader + "." + jwtPayload
 
-		byteArrSecret := []byte(m.cnf.JwtSecretKey)
-		byteArrMessage := []byte(message)
+		h := hmac.New(sha256.New, []byte(m.cnf.JwtSecretKey))
+		h.Write([]byte(message))
+		expectedSig := base64UrlEncode(h.Sum(nil))
 
-		h := hmac.New(sha256.New, byteArrSecret)
-		h.Write(byteArrMessage)
-
-		hash := h.Sum(nil)
-		newSignature := base64UrlEncode(hash)
-
-		if newSignature != signature {
-			http.Error(w, "Unauthorized. Halar po, tui hacker", http.StatusUnauthorized)
+		if expectedSig != signature {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		payloadBytes, err := base64.RawURLEncoding.DecodeString(jwtPayload)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		type jwtPayloadStruct struct {
+			Sub int `json:"sub"`
+		}
+
+		var claims jwtPayloadStruct
+		if err := json.Unmarshal(payloadBytes, &claims); err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "user_id", claims.Sub)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

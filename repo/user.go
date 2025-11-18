@@ -42,7 +42,6 @@ func (r *userRepo) Create(user domain.User) (*domain.User, error) {
     RETURNING id
 `
 
-	// Execute named query
 	var userID int
 	rows, err := r.db.NamedQuery(query, user)
 	if err != nil {

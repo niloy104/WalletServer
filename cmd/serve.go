@@ -8,45 +8,49 @@ import (
 	"wallet/repo"
 	"wallet/rest"
 	"wallet/user"
+	"wallet/wallet"
 
 	usrHandler "wallet/rest/handlers/user"
+	walletHandler "wallet/rest/handlers/walletB"
+	middleware "wallet/rest/middlewares"
 )
 
 func Serve() {
+	// Load config
 	cnf := config.GetConfig()
 
-	//fmt.Println("%+v", cnf.DB)
-
+	// Database connection
 	dbCon, err := db.NewConnection(cnf.DB)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("DB connection error:", err)
 		os.Exit(1)
 	}
 
-	err = db.MigrateDB(dbCon, "./migrations")
-	if err != nil {
-		fmt.Println(err)
+	// Run migrations
+	if err := db.MigrateDB(dbCon, "./migrations"); err != nil {
+		fmt.Println("Migration error:", err)
 		os.Exit(1)
 	}
 
-	// repos
-	//productRepo := repo.NewProductRepo(dbCon)
+	// Repositories
+	walletRepo := repo.NewWalletRepo(dbCon)
 	userRepo := repo.NewUserRepo(dbCon)
 
-	// domains
+	// DB Executor for transactions
+	dbExec := repo.NewDBExecutor(dbCon)
+
+	// Services
 	usrSvc := user.NewService(userRepo)
-	//prdctSvc := product.NewService(productRepo)
+	walletSvc := wallet.NewService(walletRepo, dbExec)
 
-	//middlewares := middleware.NewMiddlewares(cnf)
+	// Middlewares
+	mws := middleware.NewMiddlewares(cnf)
 
-	// handlers
-	//productHandler := prdctHandler.NewHandler(middlewares)
-	userHandler := usrHandler.NewHandler(cnf, usrSvc)
+	// Handlers
+	userHdl := usrHandler.NewHandler(cnf, usrSvc)
+	walletHdl := walletHandler.NewHandler(walletSvc, mws) // service first, middlewares second
 
-	server := rest.NewServer(
-		cnf,
-		//productHandler,
-		userHandler,
-	)
+	// Start server
+	server := rest.NewServer(cnf, walletHdl, userHdl)
 	server.Start()
 }
