@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"wallet/domain"
 	"wallet/util"
 )
@@ -25,6 +26,14 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 		util.SendError(w, http.StatusBadRequest, "Invalid reqesat body")
+		return
+	}
+
+	// email validation using regex
+
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(req.Email) {
+		util.SendError(w, http.StatusBadRequest, "Invalid email format")
 		return
 	}
 
