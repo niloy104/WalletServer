@@ -38,6 +38,7 @@ func (s *walletService) TopUp(ctx context.Context, userID uint64, amount int64) 
 	}
 
 	return s.db.WithTx(ctx, func(tx *sqlx.Tx) error {
+
 		wallet, err := s.walletRepo.GetForUpdate(ctx, tx, userID)
 		if err != nil {
 			return err
@@ -53,6 +54,7 @@ func (s *walletService) TopUp(ctx context.Context, userID uint64, amount int64) 
 		if err := s.walletRepo.UpdateBalance(ctx, tx, userID, amount); err != nil {
 			return err
 		}
+
 		txn := &domain.Transaction{
 			FromUserID: nil,
 			ToUserID:   &userID,
@@ -74,6 +76,7 @@ func (s *walletService) Transfer(ctx context.Context, fromUserID, toUserID uint6
 	}
 
 	return s.db.WithTx(ctx, func(tx *sqlx.Tx) error {
+
 		sender, err := s.walletRepo.GetForUpdate(ctx, tx, fromUserID)
 		if err != nil {
 			return err
@@ -93,7 +96,6 @@ func (s *walletService) Transfer(ctx context.Context, fromUserID, toUserID uint6
 		if err := s.walletRepo.UpdateBalance(ctx, tx, fromUserID, -amount); err != nil {
 			return err
 		}
-
 		if err := s.walletRepo.UpdateBalance(ctx, tx, toUserID, amount); err != nil {
 			return err
 		}

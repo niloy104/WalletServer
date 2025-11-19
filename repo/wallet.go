@@ -78,8 +78,6 @@ func (r *walletRepo) UpdateBalance(ctx context.Context, tx *sqlx.Tx, userID uint
 	return nil
 }
 
-// getTransactionsByUsrID
-
 func (r *walletRepo) GetTransactionsByUserID(ctx context.Context, userID uint64) ([]domain.Transaction, error) {
 	var txns []domain.Transaction
 	query := `
@@ -91,8 +89,6 @@ func (r *walletRepo) GetTransactionsByUserID(ctx context.Context, userID uint64)
 	err := r.db.SelectContext(ctx, &txns, query, userID)
 	return txns, err
 }
-
-// insert a transaction record
 
 func (r *walletRepo) CreateTransaction(ctx context.Context, tx *sqlx.Tx, txn *domain.Transaction) error {
 	query := `
